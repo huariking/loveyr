@@ -1,27 +1,74 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
+import Login from '../views/Login.vue'
+import User from '../views/user/User'
+import Store from '../store'
 
 Vue.use(VueRouter)
 
 const routes = [
   {
-    path: '/',
-    name: 'Home',
-    component: Home
+    path: "",
+    redirect: "/login"
   },
   {
-    path: '/about',
-    name: 'About',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
+    path: "/login",
+    component: Login
+  },
+  {
+    path: '/home',
+    component: Home,
+    meta: {
+      name: '应用管理',
+      // id: "1",
+      iconclass: "el-icon-user-solid"
+    },
+    redirect: "/home/user",
+    children: [
+      {
+        path: "/home/user",
+        component: User,
+        meta: { name: "用户管理", }
+      },
+    ]
   }
 ]
 
 const router = new VueRouter({
   routes
+})
+
+const originVueRouter = VueRouter.prototype.push;
+
+VueRouter.prototype.push = function (location, onComplete, onAbort) {
+  return originVueRouter.call(this, location, () => { })
+}
+
+router.beforeEach((to, from, next) => {
+
+  if (to.path === '/login') {
+    if (sessionStorage.getItem('username')) {
+      router.push('/home/statics')
+    } else {
+      next()
+    }
+    return;
+  }
+
+
+  if (sessionStorage.getItem('username')) {
+    next()
+  } else {
+    router.push('/login')
+  }
+
+})
+
+router.afterEach((to, from) => {
+  console.log('aftereach:', to)
+  console.log(this);
+  Store.commit('SET_MENU_ACTIVE', to.meta.id)
 })
 
 export default router
